@@ -10,7 +10,7 @@ class Char_s
         std::vector <char> Vec;
     public:
         char& operator[] (const char h);
-        char& operator<< (const char h);
+        char& operator<<= (const char h);
 };
 
 char& Char_s::operator[] (const char h)
@@ -18,7 +18,7 @@ char& Char_s::operator[] (const char h)
     return Vec[h];
 }
 
-char& Char_s::operator<< (const char h)
+char& Char_s::operator<<= (const char h)
 {
     for (char h: Vec)
     {
@@ -26,7 +26,7 @@ char& Char_s::operator<< (const char h)
     }
 }
 
-void Shifr (char n)
+std::vector<char> Shifr (char n)
 {
     std::vector <char> Key;
     for (int i=0; i<64; i++)
@@ -35,6 +35,7 @@ void Shifr (char n)
         n=abs(n);
         Key.push_back(n);
     }
+    return Key;
 }
 
 void Zamena (Char_s Vec, int kolvo_elementov, int g)
@@ -47,7 +48,7 @@ void Cikl (Char_s Vec, int kolvo_elementov)
     for (int i=0; i<4; i++)
     {
         int g=Vec[i];
-        Vec<<1;
+        Vec<<=1;
         Zamena (Vec, kolvo_elementov, g);
     }
 }
@@ -55,7 +56,7 @@ void Cikl (Char_s Vec, int kolvo_elementov)
 int main()
 {
     char n;
-    Shifr(n);
+    std::vector <char> Key = Shifr(n);
     const int dlina = 64;
     std::ifstream infile("input.txt");
     std::vector <char> Vec;
@@ -85,7 +86,7 @@ int main()
             Block.push_back(Vec[i]);
             for (int h=0; h<dlina; h++)
             {
-                Block[h]^Key[h];
+                Block[h]^=Key[h];
             }
             //Block
         }
