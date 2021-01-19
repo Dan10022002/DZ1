@@ -14,7 +14,7 @@ struct Block
     }
 };
 
-std::ostream& operator<< (std::ofstream& output, Block& block)
+std::ostream& operator<< (std::ofstream& output, Block& block) //вывод
 {
     char simvol;
     for (int h = 0; h < 8; h++)
@@ -25,7 +25,7 @@ std::ostream& operator<< (std::ofstream& output, Block& block)
     return output;
 }
 
-Block operator^ (Block block, unsigned long long key)
+Block operator^ (Block block, unsigned long long key) //побитовое исключающее или
 {
     block.block = block.block ^ key;
     return block;
@@ -44,19 +44,19 @@ Block operator| (Block block, Block container)
     return block;
 }
 
-Block operator<< (Block block, int n)
+Block operator<< (Block block, int n) //побитовый сдвиг влево
 {
     block.block = block.block << n;
     return block;
 }
 
-Block operator>> (Block block, int n)
+Block operator>> (Block block, int n) //побитовый сдвиг вправо
 {
     block.block = block.block >> n;
     return block;
 }
 
-Block operator<<= (Block block, int n)
+Block operator<<= (Block block, int n) //побитовый циклический сдвиг влево
 {
     Block container = block >> (64 - n);
     block = block << n;
@@ -64,7 +64,7 @@ Block operator<<= (Block block, int n)
     return block;
 }
 
-Block operator>>= (Block block, int n) 
+Block operator>>= (Block block, int n) //побитовый циклический сдвиг вправо
 {
     Block container = block << (64 - n);
     block = block >> n;
