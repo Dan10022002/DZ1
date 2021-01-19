@@ -1,164 +1,173 @@
 #include <iostream>
-#include <cstdlib>
-#include <vector>
-#include <cmath>
+#include <string>
+#include <ctime>
 #include <fstream>
 #include <bitset>
-#include <climits>
 
-#define BIT_NUMBER 8
-
-class Char_s
+struct Block
 {
-    private:
-        std::vector <char> Vec;
-    public:
-        char& operator[] (const char h);
+    unsigned long long block = 0;
+    Block operator=(int(x)) //обнуление блока
+    {
+        block = x;
+        return *this;
+    }
 };
 
-char& Char_s::operator[] (const char h)
+std::ostream& operator<< (std::ofstream& output, Block& block)
 {
-    return Vec[h];
+    char simvol;
+    for (int h = 0; h < 8; h++)
+    {
+        simvol = static_cast<char> (block.block >> (8 * (7 - h)));
+        output << simvol;
+    }
+    return output;
 }
 
-std::vector<char> Key_generation (char n)
+Block operator^ (Block block, unsigned long long key)
 {
-    std::vector <char> Key;
-    for (int i=0; i<n; i++)
-    {
-        int x=rand()%256;
-        x=abs(x);
-        Key.push_back(x);
-    }
-    return Key;
+    block.block = block.block ^ key;
+    return block;
 }
 
-void cyclicShiftLeft(std::vector<char> &vec,int n)
+Block operator+ (Block block, char simvol)
 {
-    size_t container=0;
-    for (int i=0;i<vec.size();i++){ // vec.size() == 8
-        container=(container|((long(vec[i]))<<(BIT_NUMBER*i)));
-    }
-    const int bits_in_long=BIT_NUMBER*sizeof(long);
-    long dest=(0|(container>>(bits_in_long-n)));
-    container<<=n;
-    container|=dest;
-    for (int i=0;i<vec.size();i++){
-        vec[i]=char(container>>(BIT_NUMBER*i));
-    }
+    block.block = block.block + simvol;
+    //std::cout << std::bitset<sizeof(simvol) * 8>(simvol);
+    return block;
 }
 
-void cyclicShiftRight(std::vector<char> &vec,int n)
+Block operator| (Block block, Block container)
 {
-    size_t container=0;
-    for (int i=0;i<vec.size();i++){ // vec.size() == 8
-        container=(container|((long(vec[i]))<<(BIT_NUMBER*i)));
-    }
-    const int bits_in_long=BIT_NUMBER*sizeof(long);
-    long dest=(0|(container<<(bits_in_long-n+1)));
-    container>>=n;
-    container|=dest;
-    for (int i=0;i<vec.size();i++){
-        vec[i]=char(container>>(BIT_NUMBER*i));
-    }
+    block.block = block.block | container.block;
+    return block;
 }
 
-void Shifr()
+Block operator<< (Block block, int n)
 {
-    const int dlina = 8;
-    std::ifstream infile("input.txt");
-    std::vector <char> Vec;
-    char ch;
-    int kolvo_simvolov=0;
-    while (infile.get(ch))
+    block.block = block.block << n;
+    return block;
+}
+
+Block operator>> (Block block, int n)
+{
+    block.block = block.block >> n;
+    return block;
+}
+
+Block operator<<= (Block block, int n)
+{
+    Block container = block >> (64 - n);
+    block = block << n;
+    block = block | container;
+    return block;
+}
+
+Block operator>>= (Block block, int n) 
+{
+    Block container = block << (64 - n);
+    block = block >> n;
+    block = block | container;
+    return block;
+}
+
+void Key_generation(unsigned long long& key) //т.к. rand генерирует только 15 битов
+{
+    key = std::rand();
+    key = key << 16;
+    key += std::rand();
+    key = key << 16;
+    key += std::rand();
+    key = key << 16;
+    key += std::rand();
+}
+
+void Shifr(std::string& input_file, std::string& output_file, std::string& text, unsigned long long& key)
+{
+    Block block;
+    std::ofstream outfile(output_file);
+    std::ofstream outfile_key("keys.txt");
+    for (int h = 0; h < text.length(); h++)
     {
-        Vec.push_back(ch);
-    }
-    for (int x: Vec)
-    {
-        kolvo_simvolov+=1;
-    }
-    infile.close();
-    int kolvo_blockov=kolvo_simvolov/dlina;
-    if (kolvo_simvolov%dlina!=0)
-    {
-        kolvo_blockov+=1;
-    }
-    int s=kolvo_simvolov;
-    Char_s Block;
-    std::ofstream outfile("output.txt");
-    for (char i=0; i<s; i++)
-    {
-        if ((i%dlina==7) || (i==(s-1)))
+        if ((h % 8 == 7) || (h == (text.length() - 1)))
         {
-            Block[i%dlina] = Vec[i];
-            std::vector <char> Key = Key_generation(dlina);
-            for (int h=0; h<dlina; h++)
-            {
-                Key[h]^=Block[h];
-            }
-            cyclicShiftLeft(Key,5);
-            for (char h: Key)
-            {
-                outfile << h;
-            }
+            block = block + text[h];
+            //std::cout << "\n" << std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
+            Key_generation(key);
+            //std::cout << std::bitset<sizeof(key) * 8>(key) << "\n";
+            block = block ^ key;
+            //std::cout << std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
+            block = block <<= 5;
+            //std::cout << std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
+            outfile_key << key; //<< "\n" << std::bitset<sizeof(key) * 8>(key) << "\n";
+            outfile << block;
+            block = 0;//обнуление блока
         }
-        else Block[i%dlina] = Vec[i];
+        else
+        {
+            block = block + text[h];
+            block = block << 8;
+        }
     }
     outfile.close();
+    outfile_key.close();
 }
 
-void Deshifr()
+void Deshifr(std::string& input_file, std::string& output_file, std::string& text, unsigned long long& key)
 {
-    const int dlina = 8;
-    std::ifstream infile("input.txt");
-    std::vector <char> Vec;
+    Block block;
+    std::ofstream outfile(output_file);
+    for (int h = 0; h < text.length(); h++)
+    {
+        if (h % 8 == 7)
+        {
+            block = block + text[h];
+            //std::cout << "\n" <<std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
+            block = block >>= 5;
+            //std::cout << std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
+            //std::cout << key << "\n" << std::bitset<sizeof(key) * 8>(key) << "\n";
+            block = block ^ key;
+            //std::cout << std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
+            outfile << block;
+            block = 0;
+            //std::cout << std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
+        }
+        else
+        {
+            block = block + text[h];
+            block = block << 8;
+        }
+    }
+}
+
+
+int main(int argc, char* argv[])
+{
+    std::srand(std::time(nullptr));
+    std::cout << "The meanings of arguments:\n1: working mode:\n\t0 = cryption;\n\t1 = decryption;\n2: input file;\n3: output file;\n4: key.\n";
+    int working_mode = std::stoi(argv[1]);
+    std::string input_file = argv[2];
+    std::string output_file = argv[3];
+    unsigned long long key;
+    std::string text;
+    std::ifstream infile(input_file);
     char ch;
-    int kolvo_simvolov=0;
     while (infile.get(ch))
     {
-        Vec.push_back(ch);
-    }
-    for (int x: Vec)
-    {
-        kolvo_simvolov+=1;
+        text += ch;
     }
     infile.close();
-    int kolvo_blockov=kolvo_simvolov/dlina;
-    if (kolvo_simvolov%dlina!=0)
+    //std::cout << text << "\n";
+    if (working_mode == 0)
     {
-        kolvo_blockov+=1;
+        key = 0;
+        Shifr(input_file, output_file, text, key);
     }
-    int s=kolvo_simvolov;
-    Char_s Block;
-    std::ofstream outfile("output.txt");
-    for (char i=0; i<s; i++)
+    else
     {
-        if ((i%dlina==7) || (i==(s-1)))
-        {
-            Block[i%dlina] = Vec[i];
-            std::vector <char> Key = Key_generation(dlina);
-            for (int h=0; h<dlina; h++)
-            {
-                Key[h]^=Block[h];
-            }
-            cyclicShiftRight(Key,5);
-            for (char h: Key)
-            {
-                outfile << h;
-            }
-        }
-        else Block[i%dlina] = Vec[i];
+        key = std::stoull(argv[4]);
+        Deshifr(input_file, output_file, text, key);
     }
-    outfile.close();
-}
-
-int main(int argc, char *argv[])
-{
-    bool t;
-    std::cout << "Code cryption is 0, code decryption is 1.\n";
-    std::cin >> t;
-    if (t==0) Shifr();
-    else Deshifr();
     return 0;
 }
