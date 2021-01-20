@@ -14,27 +14,23 @@ struct Block
     }
 };
 
-std::ostream& operator<< (std::ofstream& output, Block& block) //вывод
+std::ostream& operator<< (std::ofstream& output, Block& block)
 {
-    char simvol;
-    for (int h = 0; h < 8; h++)
-    {
-        simvol = static_cast<char> (block.block >> (8 * (7 - h)));
-        output << simvol;
-    }
+    output.write(reinterpret_cast<char*> (&block.block), sizeof(unsigned long long));
+    //std::cout << std::bitset<sizeof(block.block) * 8>(block.block) << "\n";
     return output;
 }
 
-Block operator^ (Block block, unsigned long long key) //побитовое исключающее или
+Block operator^ (Block block, unsigned long long key)
 {
     block.block = block.block ^ key;
     return block;
 }
 
-Block operator+ (Block block, char simvol)
+Block operator+ (Block block, unsigned char simvol)
 {
     block.block = block.block + simvol;
-    //std::cout << std::bitset<sizeof(simvol) * 8>(simvol);
+    //std::cout << std::bitset<sizeof(simvol) * 8>(simvol) << "\n";
     return block;
 }
 
@@ -44,19 +40,19 @@ Block operator| (Block block, Block container)
     return block;
 }
 
-Block operator<< (Block block, int n) //побитовый сдвиг влево
+Block operator<< (Block block, int n)
 {
     block.block = block.block << n;
     return block;
 }
 
-Block operator>> (Block block, int n) //побитовый сдвиг вправо
+Block operator>> (Block block, int n)
 {
     block.block = block.block >> n;
     return block;
 }
 
-Block operator<<= (Block block, int n) //побитовый циклический сдвиг влево
+Block operator<<= (Block block, int n)
 {
     Block container = block >> (64 - n);
     block = block << n;
@@ -64,7 +60,7 @@ Block operator<<= (Block block, int n) //побитовый циклически
     return block;
 }
 
-Block operator>>= (Block block, int n) //побитовый циклический сдвиг вправо
+Block operator>>= (Block block, int n) 
 {
     Block container = block << (64 - n);
     block = block >> n;
@@ -86,7 +82,7 @@ void Key_generation(unsigned long long& key) //т.к. rand генерирует 
 void Shifr(std::string& input_file, std::string& output_file, std::string& text, unsigned long long& key)
 {
     Block block;
-    std::ofstream outfile(output_file);
+    std::ofstream outfile(output_file, std::ios::binary);
     std::ofstream outfile_key("keys.txt");
     for (int h = 0; h < text.length(); h++)
     {
@@ -151,14 +147,15 @@ int main(int argc, char* argv[])
     std::string output_file = argv[3];
     unsigned long long key;
     std::string text;
-    std::ifstream infile(input_file);
-    char ch;
-    while (infile.get(ch))
+    std::ifstream infile(input_file, std::ios::binary);
+    uint8_t a;
+    while (infile.read(reinterpret_cast<char*> (&a), sizeof(uint8_t)))
     {
-        text += ch;
+        //std::cout << std::bitset<sizeof(a) * 8>(a) << "\n";
+        text += a;
     }
     infile.close();
-    //std::cout << text << "\n";
+    std::cout << text << "\n";
     if (working_mode == 0)
     {
         key = 0;
